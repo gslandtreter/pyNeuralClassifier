@@ -5,6 +5,7 @@ from neuralnetwork.synapse import Synapse
 
 import math
 
+
 class NeuralNetwork(object):
     def __init__(self, topology, activation_function, alpha):
         self.topology = topology
@@ -56,7 +57,6 @@ class NeuralNetwork(object):
 
         return output
 
-
     def backpropagate(self, expected_values):
         assert len(self.layers[-1].neurons) == len(expected_values)
 
@@ -86,10 +86,14 @@ class NeuralNetwork(object):
                 for synapse in neuron.input_synapses:
                     synapse.update_weight()
 
+    @staticmethod
+    def get_output_class(probabilities):
+        predicted_class = 1
+        pc_prob = probabilities[0]
 
+        for i in range(1, len(probabilities)):
+            if probabilities[i] > pc_prob:
+                pc_prob = probabilities[i]
+                predicted_class = i + 1
 
-
-
-
-
-
+        return predicted_class, pc_prob
