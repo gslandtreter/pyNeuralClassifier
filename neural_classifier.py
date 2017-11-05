@@ -66,25 +66,22 @@ if __name__ == '__main__':
 
     activation_function = ActivationFunction(sigmoid, derivative_sigmoid)
 
-    input_layer_size = 3
-    output_layer_size = 2
+    input_layer_size = 13
+    output_layer_size = 3
 
-    topology = [input_layer_size, 4, output_layer_size]
-    neural_network = NeuralNetwork(topology, activation_function, 0.1)
+    topology = [input_layer_size, 5, output_layer_size]
+    neural_network = NeuralNetwork(topology, activation_function, alpha=0.15)
 
     #training_data, test_data = get_network_data("dataset/cmc.data", 0.8, False)
-    training_data, test_data = get_network_data("dataset/haberman.data", 0.8, False)
-    #training_data, test_data = get_network_data("dataset/wine.data", 0.8, True)
-
+    #training_data, test_data = get_network_data("dataset/haberman.data", 0.8, False)
+    training_data, test_data = get_network_data("dataset/wine.data", percentual_separation=0.8, class_first=True)
 
     index = 0
     total_results = 0
     right_answers = 0
 
-
-
     for line in training_data:
-        for i in range(0, 10):
+        for i in range(0, 50):
             index += 1
             inputs = line[0:-1]
             expected_output = int(line[-1])
@@ -97,7 +94,7 @@ if __name__ == '__main__':
 
             if index > 100:
                 index = 0
-                print neural_network.mean_net_error
+                print "Treinando... Erro: {}".format(neural_network.mean_net_error)
 
     for line in test_data:
         inputs = line[0:-1]

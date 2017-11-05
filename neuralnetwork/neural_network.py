@@ -16,11 +16,11 @@ class NeuralNetwork(object):
 
         previous_layer = None  # type: Layer
 
-        for layer_idx in topology:
+        for layer_idx in range(0, len(topology)):
             new_layer = Layer()
 
-            for i in range(0, layer_idx):
-                neuron = Neuron(activation_function)  # type: Neuron
+            for i in range(0, topology[layer_idx]):
+                neuron = Neuron(activation_function, is_bias_neuron=False)  # type: Neuron
                 new_layer.add_neuron(neuron)
 
                 if previous_layer is not None:
@@ -29,15 +29,21 @@ class NeuralNetwork(object):
                         partner.output_synapses.append(new_synapse)
                         neuron.input_synapses.append(new_synapse)
 
+            if layer_idx != len(topology) - 1:
+                # Bias Neuron
+                neuron = Neuron(activation_function, is_bias_neuron=True)  # type: Neuron
+                neuron.output = 1
+                new_layer.add_neuron(neuron)
+
             self.layers.append(new_layer)
             previous_layer = new_layer
 
     def evaluate(self, inputs):
-        assert len(self.layers[0].neurons) == len(inputs)
+        assert len(self.layers[0].neurons) - 1 == len(inputs)
 
         first_layer = self.layers[0]
 
-        for i in range(0, len(first_layer.neurons)):
+        for i in range(0, len(first_layer.neurons) - 1):
             first_layer.neurons[i].output = inputs[i]
 
         for i in range(1, len(self.layers)):
@@ -57,52 +63,34 @@ class NeuralNetwork(object):
 
         mean_net_error = 0
 
+        # For each neuron in output layer
+        # Calculates mean net error = sqrt(sum(error*error))
         for i in range(0, len(self.layers[-1].neurons)):
             added_error = self.layers[-1].neurons[i].output - expected_values[i]
-            self.layers[-1].neurons[i].output_der = added_error
             mean_net_error += added_error * added_error
+            self.layers[-1].neurons[i].error = added_error
 
         mean_net_error /= len(self.layers[-1].neurons)
         self.mean_net_error = math.sqrt(mean_net_error)
 
-        for i in range(len(self.layers) - 1, -1, -1):
+        # For each layer, except output layer, backwards
+        for i in range(len(self.layers) - 2, -1, -1):
             layer = self.layers[i]
 
             for neuron in layer.neurons:
-                neuron.process_gradient()
+                neuron.process_error()
 
             for neuron in layer.neurons:
-                for synapse in neuron.input_synapses:
-                    synapse.process_error()
-
-            if i is 0:
-                continue
-
-            prev_layer = self.layers[i - 1]
-            for neuron in prev_layer.neurons:
-                neuron.output_der = 0
                 for synapse in neuron.output_synapses:
-                    neuron.output_der += synapse.weight * synapse.destination.input_der
+                    synapse.process_gradient()
 
         self.update_weights()
 
-
     def update_weights(self):
-        for i in range(1, len(self.layers)):
-            layer = self.layers[i]
-
+        for layer in self.layers:
             for neuron in layer.neurons:
-                if neuron.num_acc_ders > 0:
-                    neuron.bias -= self.alpha * neuron.acc_input_der / neuron.num_acc_ders
-                    neuron.acc_input_der = 0
-                    neuron.num_acc_ders = 0
-
-                for synapse in neuron.input_synapses:
-                    if synapse.num_acc_ders > 0:
-                        synapse.weight = synapse.weight - (self.alpha / synapse.num_acc_ders) * synapse.acc_error_der
-                        synapse.acc_error_der = 0
-                        synapse.num_acc_ders = 0
-
+                for synapse in neuron.output_synapses:
+                    synapse.update_weight()
 
 
     @staticmethod

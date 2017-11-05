@@ -4,31 +4,31 @@ from neuralnetwork.synapse import Synapse
 
 class Neuron(object):
 
-    def __init__(self, activ_func):
-        self.total_input = 0
+    def __init__(self, activ_func, is_bias_neuron):
         self.output = 0
+        self.error = 0
         self.gradient = 0
-        self.output_der = 0
-        self.bias = 0.1
-        self.input_der = 0
-        self.acc_input_der = 0
-        self.num_acc_ders = 0
+        self.is_bias_neuron = is_bias_neuron
 
         self.activation_function = activ_func   # type: ActivationFunction
         self.input_synapses = []    # type: list[Synapse]
         self.output_synapses = []   # type: list[Synapse]
 
-
     def update_output(self):
-        self.total_input = self.bias
+        if self.is_bias_neuron:
+            return
+
+        input_sum = 0
 
         for synapse in self.input_synapses:
-            self.total_input += synapse.source.output * synapse.weight
+            input_sum += synapse.source.output * synapse.weight
 
-        self.output = self.activation_function.function(self.total_input)
+        self.output = self.activation_function.function(input_sum)
 
-    def process_gradient(self):
-        self.input_der = self.output_der * self.activation_function.derivative(self.total_input)
-        self.acc_input_der += self.input_der
-        self.num_acc_ders += 1
+    def process_error(self):
+        total_sum = 0
+        for synapse in self.output_synapses:
+            total_sum += synapse.weight * synapse.destination.error
 
+        self.error = total_sum * self.output * (1 - self.output)
+        return self.error
