@@ -11,7 +11,8 @@ class NeuralNetwork(object):
         self.topology = topology
         self.activation_function = activation_function  # type: ActivationFunction
         self.layers = []  # type: list[Layer]
-        self.mean_net_error = 0
+        self.mean_net_error = 1
+        self.alpha = alpha
 
         previous_layer = None  # type: Layer
 
@@ -42,13 +43,7 @@ class NeuralNetwork(object):
         for i in range(1, len(self.layers)):
             layer = self.layers[i]
             for neuron in layer.neurons:
-
-                total_sum = 0
-
-                for synapse in neuron.input_synapses:
-                    total_sum += synapse.source.output * synapse.weight
-
-                neuron.output = self.activation_function.function(total_sum)
+                neuron.update_output()
 
         output = []
 
@@ -63,28 +58,52 @@ class NeuralNetwork(object):
         mean_net_error = 0
 
         for i in range(0, len(self.layers[-1].neurons)):
-            added_error = expected_values[i] - self.layers[-1].neurons[i].output
+            added_error = self.layers[-1].neurons[i].output - expected_values[i]
+            self.layers[-1].neurons[i].output_der = added_error
             mean_net_error += added_error * added_error
 
         mean_net_error /= len(self.layers[-1].neurons)
         self.mean_net_error = math.sqrt(mean_net_error)
 
-        for i in range(0, len(self.layers[-1].neurons)):
-            neuron = self.layers[-1].neurons[i]
-            neuron.process_output_gradient(expected_values[i])
-
-        for i in range(len(self.layers) - 2, 0, -1):
+        for i in range(len(self.layers) - 1, -1, -1):
             layer = self.layers[i]
 
             for neuron in layer.neurons:
                 neuron.process_gradient()
 
-        for i in range(len(self.layers) - 1, 0, -1):
+            for neuron in layer.neurons:
+                for synapse in neuron.input_synapses:
+                    synapse.process_error()
+
+            if i is 0:
+                continue
+
+            prev_layer = self.layers[i - 1]
+            for neuron in prev_layer.neurons:
+                neuron.output_der = 0
+                for synapse in neuron.output_synapses:
+                    neuron.output_der += synapse.weight * synapse.destination.input_der
+
+        self.update_weights()
+
+
+    def update_weights(self):
+        for i in range(1, len(self.layers)):
             layer = self.layers[i]
 
             for neuron in layer.neurons:
+                if neuron.num_acc_ders > 0:
+                    neuron.bias -= self.alpha * neuron.acc_input_der / neuron.num_acc_ders
+                    neuron.acc_input_der = 0
+                    neuron.num_acc_ders = 0
+
                 for synapse in neuron.input_synapses:
-                    synapse.update_weight()
+                    if synapse.num_acc_ders > 0:
+                        synapse.weight = synapse.weight - (self.alpha / synapse.num_acc_ders) * synapse.acc_error_der
+                        synapse.acc_error_der = 0
+                        synapse.num_acc_ders = 0
+
+
 
     @staticmethod
     def get_output_class(probabilities):

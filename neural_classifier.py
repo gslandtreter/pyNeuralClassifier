@@ -1,6 +1,7 @@
 from neuralnetwork.activation_function import ActivationFunction
 from neuralnetwork.neural_network import NeuralNetwork
 import math
+import random
 
 def sigmoid(x):
     if x < 0:
@@ -11,14 +12,19 @@ def derivative_sigmoid(x):
     sig = sigmoid(x)
     return sig * (1 - sig)
 
-def normalize(content):
+def normalize(content, class_first):
     normalized = []
 
     for line in content:
         tokens = line.split(",")
         new_token = []
+
         for x in tokens:
             new_token.append(float(x))
+
+        if class_first:
+            new_token[0], new_token[-1] = new_token[-1], new_token[0]
+
         normalized.append(new_token)
 
     for i in range (0, len(normalized[0]) - 1):
@@ -37,41 +43,53 @@ def normalize(content):
     return normalized
 
 
+def get_network_data(file_name, percentual_separation, class_first):
+    with open(file_name) as f:
+        content = f.readlines()
+
+    content = [x.strip() for x in content]
+    content = normalize(content, class_first)
+    random.shuffle(content)
+
+    separation = int(math.floor(len(content) * percentual_separation))
+    training_data = content[0: separation]
+    test_data = content[separation: len(content)]
+
+    return training_data, test_data
+
+def build_expected_output(class_id, dimension):
+    output = [0] * dimension
+    output[class_id - 1] = 1
+    return output
 
 if __name__ == '__main__':
 
     activation_function = ActivationFunction(sigmoid, derivative_sigmoid)
 
-    topology = [3, 10, 2]
+    input_layer_size = 3
+    output_layer_size = 2
 
+    topology = [input_layer_size, 4, output_layer_size]
     neural_network = NeuralNetwork(topology, activation_function, 0.1)
 
-    with open("dataset/haberman.data.txt") as f:
-        content = f.readlines()
+    #training_data, test_data = get_network_data("dataset/cmc.data", 0.8, False)
+    training_data, test_data = get_network_data("dataset/haberman.data", 0.8, False)
+    #training_data, test_data = get_network_data("dataset/wine.data", 0.8, True)
 
-    # you may also want to remove whitespace characters like `\n` at the end of each line
-    content = [x.strip() for x in content]
 
     index = 0
     total_results = 0
     right_answers = 0
 
-    content = normalize(content)
 
-    separation = int(math.floor(len(content) * 1))
-    training_data = content[0: separation]
-    test_data = content[separation: len(content)]
 
-    for i in range(0, 1000):
-        for line in training_data:
+    for line in training_data:
+        for i in range(0, 10):
             index += 1
-            inputs = [line[0], line[1], line[2]]
-            expected_output = int(line[3])
+            inputs = line[0:-1]
+            expected_output = int(line[-1])
 
-            if expected_output == 1:
-                output = [1, 0]
-            else:
-                output = [0, 1]
+            output = build_expected_output(expected_output, output_layer_size)
 
             # Training
             neural_network.evaluate(inputs)
@@ -81,12 +99,9 @@ if __name__ == '__main__':
                 index = 0
                 print neural_network.mean_net_error
 
-
-
-
-    for line in content:
-        inputs = [line[0], line[1], line[2]]
-        expected_output = int(line[3])
+    for line in test_data:
+        inputs = line[0:-1]
+        expected_output = int(line[-1])
 
         real_output = neural_network.evaluate(inputs)
         real_output_class, prob = neural_network.get_output_class(real_output)
@@ -97,7 +112,7 @@ if __name__ == '__main__':
         if real_output_class == expected_output:
             right_answers += 1
 
-    print float(right_answers) / total_results * 100
+    print "Total de acertos: {}%".format(float(right_answers) / total_results * 100)
 
 
 
