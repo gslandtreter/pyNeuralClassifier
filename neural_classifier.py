@@ -4,14 +4,19 @@ import math
 import random
 import csv
 
+import matplotlib.pyplot as plt
+
+
 def sigmoid(x):
     if x < 0:
         return 1 - 1 / (1 + math.exp(x))
     return 1 / (1 + math.exp(-x))
 
+
 def derivative_sigmoid(x):
     sig = sigmoid(x)
     return sig * (1 - sig)
+
 
 def normalize(content, class_first):
     normalized = []
@@ -28,7 +33,7 @@ def normalize(content, class_first):
 
         normalized.append(new_token)
 
-    for i in range (0, len(normalized[0]) - 1):
+    for i in range(0, len(normalized[0]) - 1):
         min = 99999999
         max = -99999999
 
@@ -39,7 +44,7 @@ def normalize(content, class_first):
                 max = normalized[j][i]
 
         for j in range(0, len(normalized)):
-           normalized[j][i] = (normalized[j][i] - min) / (max - min)
+            normalized[j][i] = (normalized[j][i] - min) / (max - min)
 
     return normalized
 
@@ -58,13 +63,14 @@ def get_network_data(file_name, percentual_separation, class_first):
 
     return training_data, test_data
 
+
 def build_expected_output(class_id, dimension):
     output = [0] * dimension
     output[class_id - 1] = 1
     return output
 
-if __name__ == '__main__':		
-	
+
+if __name__ == '__main__':
     activation_function = ActivationFunction(sigmoid, derivative_sigmoid)
 
     input_layer_size = 13
@@ -73,73 +79,71 @@ if __name__ == '__main__':
     topology = [input_layer_size, 5, output_layer_size]
     neural_network = NeuralNetwork(topology, activation_function, alpha=0.15)
 
-    #training_data, test_data = get_network_data("dataset/cmc.data", 0.8, False)
-    #training_data, test_data = get_network_data("dataset/haberman.data", 0.8, False)
+    # training_data, test_data = get_network_data("dataset/cmc.data", 0.8, False)
+    # training_data, test_data = get_network_data("dataset/haberman.data", 0.8, False)
     training_data, test_data = get_network_data("dataset/wine.data", percentual_separation=0.8, class_first=True)
-	
-with open('wine_train.csv', 'wb') as csvtrain:
-	fieldnames = ['instanceID', 'error']
-	writer1 = csv.DictWriter(csvtrain, fieldnames=fieldnames)
-	writer1.writeheader()
 
-	with open('wine_test.csv', 'wb') as csvtest:
-		fieldnames = ['instanceID', 'expectedOutput','predictedOutput']
-		writer2 = csv.DictWriter(csvtest, fieldnames=fieldnames)
-		writer2.writeheader()
+    error_data_points = []
+    total_training_points = 0
 
+    with open('wine_train.csv', 'wb') as csvtrain:
+        fieldnames = ['instanceID', 'error']
+        writer1 = csv.DictWriter(csvtrain, fieldnames=fieldnames)
+        writer1.writeheader()
 
-		index = 0
-		total_results = 0
-		right_answers = 0
+        with open('wine_test.csv', 'wb') as csvtest:
+            fieldnames = ['instanceID', 'expectedOutput', 'predictedOutput']
+            writer2 = csv.DictWriter(csvtest, fieldnames=fieldnames)
+            writer2.writeheader()
 
-		for (id,line) in enumerate(training_data):
-			for i in range(0, 50):
-				index += 1
-				inputs = line[0:-1]
-				expected_output = int(line[-1])
+            index = 0
+            total_results = 0
+            right_answers = 0
 
-				output = build_expected_output(expected_output, output_layer_size)
+            for (id, line) in enumerate(training_data):
+                for i in range(0, 50):
+                    index += 1
+                    inputs = line[0:-1]
+                    expected_output = int(line[-1])
 
-				# Training
-				neural_network.evaluate(inputs)
-				neural_network.backpropagate(output)
+                    output = build_expected_output(expected_output, output_layer_size)
 
-				if index > 100:
-					index = 0
-					print "Treinando... Erro: {}".format(neural_network.mean_net_error)
-					
-					writer1.writerow({'instanceID': id, 
-									 'error': neural_network.mean_net_error })
+                    # Training
+                    neural_network.evaluate(inputs)
+                    neural_network.backpropagate(output)
 
-		for (id,line) in enumerate(test_data):
-			inputs = line[0:-1]
-			expected_output = int(line[-1])
+                    total_training_points += 1
+                    if total_training_points < 50:
+                        error_data_points.append(100 - neural_network.mean_net_error)
 
-			real_output = neural_network.evaluate(inputs)
-			real_output_class, prob = neural_network.get_output_class(real_output)
+                    if index > 100:
+                        index = 0
+                        print "Treinando... Erro: {}".format(neural_network.mean_net_error)
 
-			
-			writer2.writerow({'instanceID': id, 
-							 'expectedOutput': expected_output, 
-							 'predictedOutput': real_output_class })
-			
-			
-			print real_output_class == expected_output
+                        writer1.writerow({'instanceID': id,
+                                          'error': neural_network.mean_net_error})
 
-			total_results += 1
-			if real_output_class == expected_output:
-				right_answers += 1
+            for (id, line) in enumerate(test_data):
+                inputs = line[0:-1]
+                expected_output = int(line[-1])
 
+                real_output = neural_network.evaluate(inputs)
+                real_output_class, prob = neural_network.get_output_class(real_output)
 
+                writer2.writerow({'instanceID': id,
+                                  'expectedOutput': expected_output,
+                                  'predictedOutput': real_output_class})
 
-		print "Total de acertos: {}%".format(float(right_answers) / total_results * 100)
+                print real_output_class == expected_output
 
+                total_results += 1
+                if real_output_class == expected_output:
+                    right_answers += 1
 
+            print "Total de acertos: {}%".format(float(right_answers) / total_results * 100)
 
-
-
-
-
-
+            plt.plot(error_data_points)
+            plt.ylabel('Network Performance')
+            plt.show()
 
 
