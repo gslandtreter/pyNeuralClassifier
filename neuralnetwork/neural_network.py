@@ -58,7 +58,7 @@ class NeuralNetwork(object):
 
         return output
 
-    def backpropagate(self, expected_values):
+    def backpropagate(self, expected_values, print_gradient_estimate=False):
         assert len(self.layers[-1].neurons) == len(expected_values)
 
         mean_net_error = 0
@@ -83,6 +83,9 @@ class NeuralNetwork(object):
             for neuron in layer.neurons:
                 for synapse in neuron.output_synapses:
                     gradient = synapse.process_gradient()
+                    if print_gradient_estimate:
+                        print "Gradiente: " + str(gradient)
+                        print "Gradient Estimate: " + str(synapse.estimate_gradient())
 
         self.update_weights()
 

@@ -18,7 +18,7 @@ class Synapse(object):
         return self.gradient
 
     def estimate_gradient(self):
-        return ((self.source.output + self.epsilon) - self.source.activation_function.function(self.source.output - self.epsilon)) / 2 * self.epsilon
+        return (self.destination.activation_function.derivative(self.destination.output + self.epsilon) - self.destination.activation_function.derivative(self.destination.output - self.epsilon)) / 2 * self.epsilon
 
     def update_weight(self):
         self.weight -= self.alpha * self.gradient

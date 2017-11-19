@@ -21,15 +21,12 @@ if __name__ == '__main__':
     inputs = [1]
     expected_output = [1, 0]
 
-    inputs2 = [0]
-    expected_output2 = [0, 1]
-
-    for i in range(0, 1):
+    for i in range(0, 100):
         # Training
         real_output = neural_network.evaluate(inputs)
-        neural_network.backpropagate(expected_output)
+        neural_network.backpropagate(expected_output, print_gradient_estimate=True)
 
-        real_output2 = neural_network.evaluate(inputs2)
-        neural_network.backpropagate(expected_output2)
-
+    print "Expected Output:"
+    print expected_output
+    print "Real Output:"
     print real_output
