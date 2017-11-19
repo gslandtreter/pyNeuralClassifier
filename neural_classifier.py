@@ -70,18 +70,11 @@ def build_expected_output(class_id, dimension):
     return output
 
 
-if __name__ == '__main__':
+def process_data(training_data, test_data, dataset_name, topology):
     activation_function = ActivationFunction(sigmoid, derivative_sigmoid)
 
-    input_layer_size = 13
-    output_layer_size = 3
 
-    topology = [input_layer_size, 5, output_layer_size]
     neural_network = NeuralNetwork(topology, activation_function, alpha=0.15)
-
-    # training_data, test_data = get_network_data("dataset/cmc.data", 0.8, False)
-    # training_data, test_data = get_network_data("dataset/haberman.data", 0.8, False)
-    training_data, test_data = get_network_data("dataset/wine.data", percentual_separation=0.8, class_first=True)
 
     error_data_points = []
     total_training_points = 0
@@ -106,7 +99,7 @@ if __name__ == '__main__':
                     inputs = line[0:-1]
                     expected_output = int(line[-1])
 
-                    output = build_expected_output(expected_output, output_layer_size)
+                    output = build_expected_output(expected_output, topology[-1])
 
                     # Training
                     neural_network.evaluate(inputs)
@@ -143,7 +136,27 @@ if __name__ == '__main__':
             print "Total de acertos: {}%".format(float(right_answers) / total_results * 100)
 
             plt.plot(error_data_points)
-            plt.ylabel('Network Performance')
+            plt.ylabel('Network Performance - ' + dataset_name)
             plt.show()
+
+if __name__ == '__main__':
+
+    # training_data, test_data = get_network_data("dataset/cmc.data", 0.8, False)
+    # training_data, test_data = get_network_data("dataset/haberman.data", 0.8, False)
+
+    dataset_name = "dataset/cmc.data"
+    training_data, test_data = get_network_data(dataset_name, percentual_separation=0.8, class_first=False)
+    topology = [9, 5, 3]
+    process_data(training_data, test_data, dataset_name, topology)
+
+    dataset_name = "dataset/haberman.data"
+    training_data, test_data = get_network_data(dataset_name, percentual_separation=0.8, class_first=False)
+    topology = [3, 5, 2]
+    process_data(training_data, test_data, dataset_name, topology)
+
+    dataset_name = "dataset/wine.data"
+    training_data, test_data = get_network_data(dataset_name, percentual_separation=0.8, class_first=True)
+    topology = [13, 5, 3]
+    process_data(training_data, test_data, dataset_name, topology)
 
 

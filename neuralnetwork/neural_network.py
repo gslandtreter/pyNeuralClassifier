@@ -82,7 +82,7 @@ class NeuralNetwork(object):
 
             for neuron in layer.neurons:
                 for synapse in neuron.output_synapses:
-                    synapse.process_gradient()
+                    gradient = synapse.process_gradient()
 
         self.update_weights()
 
