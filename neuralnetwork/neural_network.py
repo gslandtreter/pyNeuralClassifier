@@ -7,12 +7,15 @@ import math
 
 
 class NeuralNetwork(object):
-    def __init__(self, topology, activation_function, alpha):
+    def __init__(self, topology, activation_function, alpha, has_bias_neurons=True):
         self.topology = topology
         self.activation_function = activation_function  # type: ActivationFunction
         self.layers = []  # type: list[Layer]
         self.mean_net_error = 1
         self.alpha = alpha
+        self.output = []
+        self.cost = 0
+        self.has_bias_neurons = has_bias_neurons
 
         previous_layer = None  # type: Layer
 
@@ -29,7 +32,7 @@ class NeuralNetwork(object):
                         partner.output_synapses.append(new_synapse)
                         neuron.input_synapses.append(new_synapse)
 
-            if layer_idx != len(topology) - 1:
+            if layer_idx != len(topology) - 1 and has_bias_neurons:
                 # Bias Neuron
                 neuron = Neuron(activation_function, is_bias_neuron=True)  # type: Neuron
                 neuron.output = 1
@@ -39,26 +42,46 @@ class NeuralNetwork(object):
             previous_layer = new_layer
 
     def evaluate(self, inputs):
-        assert len(self.layers[0].neurons) - 1 == len(inputs)
+        if self.has_bias_neurons:
+            assert len(self.layers[0].neurons) - 1 == len(inputs)
+        else:
+            assert len(self.layers[0].neurons) == len(inputs)
 
         first_layer = self.layers[0]
 
-        for i in range(0, len(first_layer.neurons) - 1):
-            first_layer.neurons[i].output = inputs[i]
+        if self.has_bias_neurons:
+            for i in range(0, len(first_layer.neurons) - 1):
+                first_layer.neurons[i].output = inputs[i]
+        else:
+            for i in range(0, len(first_layer.neurons)):
+                first_layer.neurons[i].output = inputs[i]
 
         for i in range(1, len(self.layers)):
             layer = self.layers[i]
             for neuron in layer.neurons:
                 neuron.update_output()
 
-        output = []
+        self.output = []
 
         for neuron in self.layers[-1].neurons:
-            output.append(neuron.output)
+            self.output.append(neuron.output)
 
-        return output
+        return self.output
 
-    def backpropagate(self, expected_values, print_gradient_estimate=False):
+    def get_cost(self, expected_values):
+
+        total_sum = 0
+        for i in range(0, len(expected_values)):
+            y = expected_values[i]
+            fx = self.output[i]
+
+            total_sum += (-y * math.log(fx)) - ((1 - y) * math.log(1 - fx))
+
+        self.cost = total_sum / len(expected_values)
+        return self.cost
+
+
+    def backpropagate(self, expected_values):
         assert len(self.layers[-1].neurons) == len(expected_values)
 
         mean_net_error = 0
@@ -82,18 +105,86 @@ class NeuralNetwork(object):
 
             for neuron in layer.neurons:
                 for synapse in neuron.output_synapses:
-                    gradient = synapse.process_gradient()
-                    if print_gradient_estimate:
-                        print "Gradiente: " + str(gradient)
-                        print "Gradient Estimate: " + str(synapse.estimate_gradient())
-
-        self.update_weights()
+                    synapse.process_gradient()
 
     def update_weights(self):
         for layer in self.layers:
             for neuron in layer.neurons:
                 for synapse in neuron.output_synapses:
                     synapse.update_weight()
+
+    def get_weights(self):
+        weights = []
+
+        for layer in self.layers:
+            for neuron in layer.neurons:
+                for synapse in neuron.output_synapses:
+                    weights.append(synapse.weight)
+
+        return weights
+
+    def get_weight_gradients(self):
+        weights = []
+
+        for layer in self.layers:
+            for neuron in layer.neurons:
+                for synapse in neuron.output_synapses:
+                    weights.append(synapse.gradient)
+
+        return weights
+
+    def get_weight(self, index):
+        curr_index = 0
+
+        for layer in self.layers:
+            for neuron in layer.neurons:
+                for synapse in neuron.output_synapses:
+                    if curr_index == index:
+                        return synapse.weight
+                    else:
+                        curr_index += 1
+
+        return None
+
+    def set_weight(self, new_weight, index):
+        curr_index = 0
+
+        for layer in self.layers:
+            for neuron in layer.neurons:
+                for synapse in neuron.output_synapses:
+                    if curr_index == index:
+                        synapse.weight = new_weight
+                        return new_weight
+                    else:
+                        curr_index += 1
+
+        return None
+
+    def estimate_gradients(self, epsilon, inputs, expected_output):
+        estimated_gradients = []
+
+        for i in range(0, len(self.get_weights())):
+
+            original_weight = self.get_weight(i)
+
+            # J(w1 + epsilon)
+            self.set_weight(original_weight + epsilon, i)
+            self.evaluate(inputs)
+            j_pos = self.get_cost(expected_output)
+
+            # J(w1 - epsilon)
+            self.set_weight(original_weight - epsilon, i)
+            self.evaluate(inputs)
+            j_neg = self.get_cost(expected_output)
+
+            estimated_gradient = (j_pos - j_neg) / (2 * epsilon)
+            estimated_gradients.append(estimated_gradient)
+
+            # Reset original weight
+            self.set_weight(original_weight, i)
+
+        return estimated_gradients
+
 
 
     @staticmethod

@@ -104,6 +104,7 @@ def process_data(training_data, test_data, dataset_name, topology):
                     # Training
                     neural_network.evaluate(inputs)
                     neural_network.backpropagate(output)
+                    neural_network.update_weights()
 
                     total_training_points += 1
                     if total_training_points < 50:
