@@ -109,13 +109,11 @@ def process_data(training_data, test_data, dataset_name, topology):
                     total_training_points += 1
                     if total_training_points < 50:
                         error_data_points.append(100 - neural_network.mean_net_error)
+                        writer1.writerow({'instanceID': id,'error': neural_network.mean_net_error})
 
                     if index > 100:
                         index = 0
                         print "Treinando... Erro: {}".format(neural_network.mean_net_error)
-
-                        writer1.writerow({'instanceID': id,
-                                          'error': neural_network.mean_net_error})
 
             for (id, line) in enumerate(test_data):
                 inputs = line[0:-1]
