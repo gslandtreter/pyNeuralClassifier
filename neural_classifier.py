@@ -147,16 +147,30 @@ if __name__ == '__main__':
     dataset_name = "dataset/cmc.data"
     training_data, test_data = get_network_data(dataset_name, percentual_separation=0.8, class_first=False)
     topology = [9, 5, 3]
-    process_data(training_data, test_data, dataset_name, topology)
+    process_data(training_data, test_data, dataset_name+'_1', topology)
+    topology = [9, 11, 3]
+    process_data(training_data, test_data, dataset_name+'_2', topology)
+    topology = [9, 2, 3]
+    process_data(training_data, test_data, dataset_name+'_3', topology)
 
+    
     dataset_name = "dataset/haberman.data"
     training_data, test_data = get_network_data(dataset_name, percentual_separation=0.8, class_first=False)
     topology = [3, 5, 2]
-    process_data(training_data, test_data, dataset_name, topology)
+    process_data(training_data, test_data, dataset_name+'_1', topology)
+    topology = [3, 11, 2]
+    process_data(training_data, test_data, dataset_name+'_2', topology)
+    topology = [3, 2, 2]
+    process_data(training_data, test_data, dataset_name+'_3', topology)
+    
 
     dataset_name = "dataset/wine.data"
     training_data, test_data = get_network_data(dataset_name, percentual_separation=0.8, class_first=True)
     topology = [13, 5, 3]
-    process_data(training_data, test_data, dataset_name, topology)
+    process_data(training_data, test_data, dataset_name+'_1', topology)
+    topology = [13, 11, 3]
+    process_data(training_data, test_data, dataset_name+'_2', topology)
+    topology = [13, 2, 3]
+    process_data(training_data, test_data, dataset_name+'_3', topology)
 
 
