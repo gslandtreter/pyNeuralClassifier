@@ -79,12 +79,12 @@ def process_data(training_data, test_data, dataset_name, topology):
     error_data_points = []
     total_training_points = 0
 
-    with open('wine_train.csv', 'wb') as csvtrain:
+    with open(dataset_name + '_train.csv', 'wb') as csvtrain:
         fieldnames = ['instanceID', 'error']
         writer1 = csv.DictWriter(csvtrain, fieldnames=fieldnames)
         writer1.writeheader()
 
-        with open('wine_test.csv', 'wb') as csvtest:
+        with open(dataset_name + '_test.csv', 'wb') as csvtest:
             fieldnames = ['instanceID', 'expectedOutput', 'predictedOutput']
             writer2 = csv.DictWriter(csvtest, fieldnames=fieldnames)
             writer2.writeheader()
@@ -138,6 +138,7 @@ def process_data(training_data, test_data, dataset_name, topology):
 
             plt.plot(error_data_points)
             plt.ylabel('Network Performance - ' + dataset_name)
+            plt.xlabel('Number of presented samples')
             plt.show()
 
 if __name__ == '__main__':
